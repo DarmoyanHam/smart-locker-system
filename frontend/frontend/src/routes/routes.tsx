@@ -7,6 +7,8 @@ import {
 import { HomeContainer } from "../pages/HomePage";
 import { ClientContainer } from "../pages/ClientPage";
 import { AdminContainer } from "../pages/AdminPage";
+import type { Layout } from "antd";
+import { BackButton } from "../pages/BackButton";
 
 export const router = createBrowserRouter([
     {
@@ -15,10 +17,14 @@ export const router = createBrowserRouter([
     },
     {
         path: CLIENT_PATH,
-        element: <ClientContainer />,
+        element: <BackButton>
+            <ClientContainer />
+        </BackButton>,
     },
     {
         path: ADMIN_PATH,
-        element: <AdminContainer />,
+        element: <BackButton>
+            <AdminContainer />
+        </BackButton>,
     }
 ]);
