@@ -3,7 +3,7 @@ package org.backend.service;
 import jakarta.annotation.PostConstruct;
 import org.backend.MyException;
 import org.backend.entity.Box;
-import org.backend.repository.LockerRepository;
+import org.backend.repository.BoxRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -16,7 +16,7 @@ import java.util.*;
 public class BoxService {
 
     @Autowired
-    private LockerRepository lockerRepository;
+    private BoxRepository boxRepository;
 
     @Autowired
     private EmailNotifier emailNotifier;
@@ -28,31 +28,31 @@ public class BoxService {
     @PostConstruct
     public void init() {
         initBoxesInMemory();
-        saveAllToDatabase();
     }
 
 
     public void initBoxesInMemory() {
+        List<Box> tempBoxes = new ArrayList<>();
+
         for (int i = 0; i < 10; i++) {
             Box box = new Box();
             box.setEmpty(true);
             box.setLockedUntil(null);
-            isEmpty.put((long) i, box);
+            tempBoxes.add(box);
         }
-    }
 
 
-    public void saveAllToDatabase() {
-        List<Box> boxList = new ArrayList<>(isEmpty.values());
-        List<Box> savedBoxes = lockerRepository.saveAll(boxList);
+        List<Box> savedBoxes = boxRepository.saveAll(tempBoxes);
+
 
         isEmpty.clear();
         for (Box box : savedBoxes) {
             isEmpty.put(box.getId(), box);
         }
 
-        System.out.println("All boxes have been saved");
+        System.out.println("Boxes initialized and saved.");
     }
+
 
     public Box lockLocker(Duration duration) {
         Optional<Map.Entry<Long, Box>> freeEntry = isEmpty.entrySet().stream().findFirst();
@@ -68,7 +68,7 @@ public class BoxService {
         box.setLockedUntil(LocalDateTime.now().plus(duration));
         isEmpty.remove(id);
         busy.put(id, box);
-        lockerRepository.save(box);
+        boxRepository.save(box);
         return box;
     }
 
@@ -87,13 +87,13 @@ public class BoxService {
         isEmpty.put(lockerId, box);
 
         System.out.println("Box with id " + lockerId + " has been unlocked.");
-        lockerRepository.save(box);
+        boxRepository.save(box);
         return box;
     }
 
     @Scheduled(fixedRate = 30000)
     public void notifyAdminAboutExpiringLockers() {
-        List<Box> boxes = lockerRepository.findByLockedTrue();
+        List<Box> boxes = boxRepository.findByIsEmptyFalse();
 
         for (Box box : boxes) {
             if (box.isAlmostExpired(NOTIFY_BEFORE)) {

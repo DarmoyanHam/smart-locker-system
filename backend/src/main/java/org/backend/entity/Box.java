@@ -14,12 +14,7 @@ import java.time.LocalDateTime;
 @Table(name = "box")
 public class Box {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "locker_id_seq")
-    @SequenceGenerator(
-            name = "locker_id_seq",
-            sequenceName = "locker_id_seq",
-            allocationSize = 50
-    )
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(name = "is_empty")
