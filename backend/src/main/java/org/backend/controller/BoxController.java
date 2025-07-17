@@ -1,8 +1,11 @@
 package org.backend.controller;
 
+import org.backend.MyException;
 import org.backend.entity.Box;
 import org.backend.service.BoxService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.Duration;
@@ -23,9 +26,14 @@ public class BoxController {
     }
 
 
-    @PostMapping("/unlock/{id}")
-    public Box unlockBox(@PathVariable Long id) {
-        return boxService.unlockLocker(id);
+    @PostMapping("/unlock-by-qr")
+    public ResponseEntity<Box> unlockBoxByQr(@RequestParam String qrCodePath) {
+        try {
+            Box box = boxService.unlockByQr(qrCodePath);
+            return ResponseEntity.ok(box);
+        } catch (MyException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        }
     }
 
     @GetMapping("/status")

@@ -24,7 +24,7 @@ public class BoxService {
     private final Map<Long, Box> isEmpty = new HashMap<>();
     private final Map<Long, Box> busy = new HashMap<>();
     private static final Duration NOTIFY_BEFORE = Duration.ofMinutes(1);
-
+    private static final String qrCodes = "C:\\Users\\USER\\smart-locker-system\\backend\\src\\qr-codes";
     @PostConstruct
     public void init() {
         initBoxesInMemory();
@@ -41,9 +41,7 @@ public class BoxService {
             tempBoxes.add(box);
         }
 
-
         List<Box> savedBoxes = boxRepository.saveAll(tempBoxes);
-
 
         isEmpty.clear();
         for (Box box : savedBoxes) {
@@ -66,30 +64,59 @@ public class BoxService {
 
         box.setEmpty(false);
         box.setLockedUntil(LocalDateTime.now().plus(duration));
+
+        try {
+            String qrText = "boxId=" + id + "&expiresAt=" + box.getLockedUntil();
+            String qrPath = QrGenerator.generateQrImage(qrText, qrCodes);
+            box.setQrCodePath(qrPath);
+        } catch (Exception e) {
+            throw new MyException("QR Code generation failed: " + e.getMessage());
+        }
         isEmpty.remove(id);
         busy.put(id, box);
-        boxRepository.save(box);
-        return box;
+        return boxRepository.save(box);
     }
 
 
-    public Box unlockLocker(Long lockerId) {
-        Box box = busy.get(lockerId);
 
-        if (box == null) {
-            throw new MyException("Box not found.");
+    public Box unlockByQr(String qrContent) {
+        try {
+            String[] parts = qrContent.split("&");
+
+            Optional<Long> optionalBoxId = Arrays.stream(parts)
+                    .filter(part -> part.startsWith("boxId="))
+                    .map(part -> Long.parseLong(part.substring("boxId=".length())))
+                    .findFirst();
+
+            if (optionalBoxId.isEmpty()) {
+                throw new MyException("Invalid QR content: boxId not found.");
+            }
+
+            Long boxId = optionalBoxId.get();
+
+            Box box = boxRepository.findById(boxId)
+                    .orElseThrow(() -> new MyException("Box not found with id: " + boxId));
+
+            if (box.isEmpty()) {
+                throw new MyException("Box is already unlocked.");
+            }
+
+            box.setEmpty(true);
+            box.setLockedUntil(null);
+            box.setQrCodePath(null);
+
+            busy.remove(boxId);
+            isEmpty.put(boxId, box);
+
+            return boxRepository.save(box);
+        } catch (Exception e) {
+            throw new MyException("Failed to unlock box by QR: " + e.getMessage());
         }
-
-        box.setEmpty(true);
-        box.setLockedUntil(null);
-
-        busy.remove(lockerId);
-        isEmpty.put(lockerId, box);
-
-        System.out.println("Box with id " + lockerId + " has been unlocked.");
-        boxRepository.save(box);
-        return box;
     }
+
+
+
+
 
     @Scheduled(fixedRate = 30000)
     public void notifyAdminAboutExpiringLockers() {
@@ -124,5 +151,6 @@ public class BoxService {
 
         return expiring;
     }
+
 
 }
