@@ -1,6 +1,6 @@
 import {Typography, Button, Space} from "antd";
 import { useNavigate } from "react-router-dom";
-import { ADMIN_PATH, CLIENT_PATH } from "../consts/paths";
+import { PUT_PATH, TAKE_PATH } from "../consts/paths";
 
 const {Title} = Typography;
 
@@ -9,10 +9,10 @@ export const HomeContainer = () => {
 
     return (
         <div>
-            <Title level={3}>Are you admin or client?</Title>
+            <Title level={3}>Are you going to put or take something?</Title>
             <Space>
-                <Button onClick={() => navigate(ADMIN_PATH)}>Admin</Button>
-                <Button type="primary" onClick={() => navigate(CLIENT_PATH)}>Client</Button>
+                <Button onClick={() => navigate(TAKE_PATH)}>Pick up</Button>
+                <Button type="primary" onClick={() => navigate(PUT_PATH)}>Put</Button>
             </Space>
         </div>
     )

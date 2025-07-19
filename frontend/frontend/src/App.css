@@ -40,3 +40,8 @@
 .read-the-docs {
   color: #888;
 }
+
+.ant-btn-primary {
+  background-color: #1bc2dd !important;
+  color: #fff !important;
+}
