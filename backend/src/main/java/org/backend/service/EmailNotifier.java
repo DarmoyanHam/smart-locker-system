@@ -13,7 +13,7 @@ public class EmailNotifier {
     @Autowired
     private JavaMailSender mailSender;
 
-    private final String adminEmail = "admin@example.com"; // Поменяй на свой email
+    private final String adminEmail = "admin@example.com";
 
     public void notifyExpiringLocker(Long lockerId, LocalDateTime lockedUntil) {
         String subject = "Уведомление: Шкафчик #" + lockerId + " скоро освободится";
