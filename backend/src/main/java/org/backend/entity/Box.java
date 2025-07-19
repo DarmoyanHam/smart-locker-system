@@ -26,22 +26,23 @@ public class Box {
     @Column(name = "qr_code_path")
     private String qrCodePath;
 
-    @Column(name = "box_size")
-    private BoxSize boxSize;
+//    @Enumerated(EnumType.STRING)
+//    @Column(name = "box_size")
+//    private BoxSize boxSize;
 
     @Column(name = "number")
     private int number;
 
-    public void decidingEnumType(int num){
-        if(num >= 1 &&  num <= 3){
-            boxSize = BoxSize.SMALL;
-        }else if(num > 3 && num <= 7){
-            boxSize = BoxSize.MEDIUM;
-        }else{
-            boxSize = BoxSize.LARGE;
-        }
-
-    }
+//    public void decidingEnumType(int num){
+//        if(num >= 1 &&  num <= 3){
+//            boxSize = BoxSize.SMALL;
+//        }else if(num > 3 && num <= 7){
+//            boxSize = BoxSize.MEDIUM;
+//        }else{
+//            boxSize = BoxSize.LARGE;
+//        }
+//
+//    }
 
     public boolean isAlmostExpired(Duration threshold) {
         return isEmpty && lockedUntil != null &&
