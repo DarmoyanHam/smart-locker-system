@@ -1,5 +1,8 @@
 package org.backend.service;
 
+import com.google.zxing.*;
+import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
+import com.google.zxing.common.HybridBinarizer;
 import jakarta.annotation.PostConstruct;
 import org.backend.MyException;
 import org.backend.entity.Box;
@@ -7,10 +10,15 @@ import org.backend.repository.BoxRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class BoxService {
@@ -52,7 +60,7 @@ public class BoxService {
     }
 
 
-    public Box lockLocker(Duration duration) {
+    public String lockLockerAndReturnQrPath(Duration duration) {
         Optional<Map.Entry<Long, Box>> freeEntry = isEmpty.entrySet().stream().findFirst();
 
         if (freeEntry.isEmpty()) {
@@ -72,33 +80,35 @@ public class BoxService {
         } catch (Exception e) {
             throw new MyException("QR Code generation failed: " + e.getMessage());
         }
+
         isEmpty.remove(id);
         busy.put(id, box);
-        return boxRepository.save(box);
+        boxRepository.save(box);
+
+        return box.getQrCodePath();
     }
 
 
 
-    public Box unlockByQr(String qrContent) {
+    public Box unlockLockerByQrImage(MultipartFile file) {
         try {
-            String[] parts = qrContent.split("&");
+            BufferedImage bufferedImage = ImageIO.read(file.getInputStream());
+            LuminanceSource source = new BufferedImageLuminanceSource(bufferedImage);
+            BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(source));
 
-            Optional<Long> optionalBoxId = Arrays.stream(parts)
-                    .filter(part -> part.startsWith("boxId="))
-                    .map(part -> Long.parseLong(part.substring("boxId=".length())))
-                    .findFirst();
+            Result result = new MultiFormatReader().decode(bitmap);
+            String qrText = result.getText(); // например: "boxId=3&expiresAt=2025-07-19T14:35:12"
 
-            if (optionalBoxId.isEmpty()) {
-                throw new MyException("Invalid QR content: boxId not found.");
-            }
+            Map<String, String> params = parseQrText(qrText);
+            Long boxId = Long.parseLong(params.get("boxId"));
 
-            Long boxId = optionalBoxId.get();
+            Optional<Box> optionalBox = boxRepository.findById(boxId);
+            if (optionalBox.isEmpty()) throw new MyException("Box not found");
 
-            Box box = boxRepository.findById(boxId)
-                    .orElseThrow(() -> new MyException("Box not found with id: " + boxId));
+            Box box = optionalBox.get();
 
-            if (box.isEmpty()) {
-                throw new MyException("Box is already unlocked.");
+            if (LocalDateTime.now().isAfter(box.getLockedUntil())) {
+                throw new MyException("QR expired");
             }
 
             box.setEmpty(true);
@@ -109,13 +119,11 @@ public class BoxService {
             isEmpty.put(boxId, box);
 
             return boxRepository.save(box);
-        } catch (Exception e) {
-            throw new MyException("Failed to unlock box by QR: " + e.getMessage());
+
+        } catch (IOException | NotFoundException e) {
+            throw new MyException("Failed to decode QR image: " + e.getMessage());
         }
     }
-
-
-
 
 
     @Scheduled(fixedRate = 30000)
@@ -152,5 +160,10 @@ public class BoxService {
         return expiring;
     }
 
+    private Map<String, String> parseQrText(String text) {
+        return Arrays.stream(text.split("&"))
+                .map(s -> s.split("="))
+                .collect(Collectors.toMap(kv -> kv[0], kv -> kv[1]));
+    }
 
 }

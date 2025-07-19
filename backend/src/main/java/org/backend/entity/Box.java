@@ -26,15 +26,22 @@ public class Box {
     @Column(name = "qr_code_path")
     private String qrCodePath;
 
-//    public void lock(Duration duration) {
-//        this.isEmpty = true;
-//        this.lockedUntil = LocalDateTime.now().plus(duration);
-//    }
-//
-//    public void unlock() {
-//        this.isEmpty = false;
-//        this.lockedUntil = null;
-//    }
+    @Column(name = "box_size")
+    private BoxSize boxSize;
+
+    @Column(name = "number")
+    private int number;
+
+    public void decidingEnumType(int num){
+        if(num >= 1 &&  num <= 3){
+            boxSize = BoxSize.SMALL;
+        }else if(num > 3 && num <= 7){
+            boxSize = BoxSize.MEDIUM;
+        }else{
+            boxSize = BoxSize.LARGE;
+        }
+
+    }
 
     public boolean isAlmostExpired(Duration threshold) {
         return isEmpty && lockedUntil != null &&
