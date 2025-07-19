@@ -8,6 +8,7 @@ import org.backend.MyException;
 import org.backend.entity.Box;
 import org.backend.repository.BoxRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -32,7 +33,9 @@ public class BoxService {
     private final Map<Long, Box> isEmpty = new HashMap<>();
     private final Map<Long, Box> busy = new HashMap<>();
     private static final Duration NOTIFY_BEFORE = Duration.ofMinutes(1);
-    private static final String qrCodes = "C:\\Users\\USER\\smart-locker-system\\backend\\src\\qr-codes";
+    @Value("${qr.codes.path}")
+    private String qrCodes;
+
     @PostConstruct
     public void init() {
         initBoxesInMemory();
