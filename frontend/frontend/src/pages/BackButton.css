@@ -1,0 +1,6 @@
+.back-button-wrapper {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 1000;
+}
