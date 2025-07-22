@@ -25,7 +25,7 @@ public class BoxController {
 
 
     @PostMapping("/lock")
-    public ResponseEntity<byte[]> lockBox(@RequestParam(defaultValue = "5") int durationInMinutes) {
+    public ResponseEntity<byte[]> lockBox(@RequestParam int durationInMinutes) {
         try {
             String qrPath = boxService.lockLockerAndReturnQrPath(Duration.ofMinutes(durationInMinutes));
             Path imagePath = Path.of(qrPath);
